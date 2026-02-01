@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Razeenah ❤️</title>
+  <style>
+    :root{
+      --bg:#ffd6e7;
+      --card:#ffffff;
+      --pink:#ff4f8b;
+      --text:#222;
+      --muted:#666;
+    }
+
+    *{ box-sizing:border-box; }
+    body{
+      margin:0;
+      height:100dvh;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      background:var(--bg);
+      font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;
+      overflow:hidden;
+      touch-action:manipulation;
+    }
+
+    .wrap{
+      width:min(420px, 92vw);
+      padding:16px;
+    }
+
+    .card{
+      position:relative;
+      background:var(--card);
+      border-radius:22px;
+      padding:28px 22px 22px;
+      text-align:center;
+      box-shadow:0 10px 30px rgba(0,0,0,.12);
+      overflow:hidden;
+    }
+
+    .emoji{
+      font-size:44px;
+      margin-bottom:8px;
+      line-height:1;
+    }
+
+    h1{
+      margin:0 0 18px;
+      font-size:24px;
+      color:var(--text);
+    }
+
+    .buttons{
+      position:relative;
+      height:76px; /* area the No button can move inside */
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      gap:14px;
+    }
+
+    button{
+      border:none;
+      border-radius:999px;
+      padding:14px 22px;
+      font-size:18px;
+      font-weight:700;
+      cursor:pointer;
+      -webkit-tap-highlight-color: transparent;
+      transition: transform .12s ease;
+      user-select:none;
+    }
+    button:active{ transform:scale(.98); }
+
+    #yes{
+      background:var(--pink);
+      color:#fff;
+      min-width:120px;
+      box-shadow:0 8px 18px rgba(255,79,139,.35);
+    }
+
+    #no{
+      background:#eee;
+      color:#111;
+      position:absolute;
+      left:55%;
+      top:50%;
+      transform:translate(-50%,-50%);
+      min-width:100px;
+      transition:
+        left .22s cubic-bezier(.2,.9,.2,1),
+        top  .22s cubic-bezier(.2,.9,.2,1);
+    }
+
+    .hint{
+      margin-top:14px;
+      font-size:13px;
+      color:var(--muted);
+    }
+
+    .hidden{ display:none; }
+
+    /* Cute floating hearts (lightweight) */
+    .heart{
+      position:absolute;
+      bottom:-20px;
+      font-size:18px;
+      opacity:.8;
+      animation: floatUp 2.8s ease-in forwards;
+      pointer-events:none;
+    }
+    @keyframes floatUp{
+      from{ transform:translateY(0) scale(1); opacity:.85; }
+      to{ transform:translateY(-160px) scale(1.35); opacity:0; }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="card" id="questionCard">
+      <div class="emoji">😺💘</div>
+      <h1>Razeenah, will you be my Valentine?</h1>
+
+      <div class="buttons" id="playArea">
+        <button id="yes" type="button">Yes</button>
+        <button id="no" type="button">No</button>
+      </div>
+
+      <div class="hint">Tip: try pressing “No” 😏</div>
+    </div>
+
+    <div class="card hidden" id="yayCard">
+      <div class="emoji">🎉💖</div>
+      <h1>YAY!!!</h1>
+      <p style="margin:0;color:var(--text);font-size:16px;">
+        I love you so much, Razeenah 😘
+      </p>
+      <div style="margin-top:16px;color:var(--muted);font-size:13px;">
+        (Screenshot this and send it back 😉)
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const yesBtn = document.getElementById("yes");
+    const noBtn  = document.getElementById("no");
+    const playArea = document.getElementById("playArea");
+
+    // Move "No" to a random spot INSIDE the play area, smoothly
+    function moveNo(){
+      const areaRect = playArea.getBoundingClientRect();
+      const btnRect  = noBtn.getBoundingClientRect();
+
+      const padding = 10;
+      const maxX = areaRect.width - btnRect.width - padding;
+      const maxY = areaRect.height - btnRect.height - padding;
+
+      const x = padding + Math.random() * Math.max(0, maxX);
+      const y = padding + Math.random() * Math.max(0, maxY);
+
+      noBtn.style.left = `${x + btnRect.width/2}px`;
+      noBtn.style.top  = `${y + btnRect.height/2}px`;
+    }
+
+    // On mobile, use touch start / pointer events (more reliable than hover)
+    // Make it dodge when your finger gets near OR when you try to tap it.
+    noBtn.addEventListener("pointerdown", (e) => { e.preventDefault(); moveNo(); });
+    noBtn.addEventListener("pointerenter", moveNo);
+
+    // Also dodge if user taps anywhere near the "No" button (feels smoother on phones)
+    playArea.addEventListener("pointermove", (e) => {
+      const btn = noBtn.getBoundingClientRect();
+      const dx = e.clientX - (btn.left + btn.width/2);
+      const dy = e.clientY - (btn.top + btn.height/2);
+      const dist = Math.sqrt(dx*dx + dy*dy);
+      if (dist < 70) moveNo();
+    });
+
+    function spawnHeart(){
+      const h = document.createElement("div");
+      h.className = "heart";
+      h.textContent = "💗";
+      h.style.left = (10 + Math.random()*80) + "%";
+      h.style.transform = `translateY(0) scale(${0.9 + Math.random()*0.6})`;
+      document.body.appendChild(h);
+      setTimeout(() => h.remove(), 3000);
+    }
+
+    yesBtn.addEventListener("click", () => {
+      document.getElementById("questionCard").classList.add("hidden");
+      document.getElementById("yayCard").classList.remove("hidden");
+      for (let i=0;i<10;i++) setTimeout(spawnHeart, i*120);
+    });
+
+    // Start with No slightly moved so it doesn't overlap nicely every time
+    setTimeout(moveNo, 300);
+  </script>
+</body>
+</html>
