@@ -4,6 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Razeenah ❤️</title>
+
   <style>
     :root{
       --bg:#ffd6e7;
@@ -14,6 +15,7 @@
     }
 
     *{ box-sizing:border-box; }
+
     body{
       margin:0;
       height:100dvh;
@@ -27,7 +29,7 @@
     }
 
     .wrap{
-      width:min(420px, 92vw);
+      width:min(460px, 92vw);
       padding:16px;
     }
 
@@ -53,47 +55,56 @@
       color:var(--text);
     }
 
+    /* BIGGER playground so "No" can move around properly */
     .buttons{
       position:relative;
-      height:76px; /* area the No button can move inside */
+      width:100%;
+      height:190px;            /* bigger range */
+      margin:0 auto;
       display:flex;
       align-items:center;
       justify-content:center;
-      gap:14px;
     }
 
     button{
       border:none;
       border-radius:999px;
-      padding:14px 22px;
-      font-size:18px;
-      font-weight:700;
       cursor:pointer;
       -webkit-tap-highlight-color: transparent;
-      transition: transform .12s ease;
       user-select:none;
+      font-weight:800;
     }
-    button:active{ transform:scale(.98); }
 
     #yes{
       background:var(--pink);
       color:#fff;
-      min-width:120px;
+      padding:16px 34px;
+      font-size:18px;
+      min-width:160px;
       box-shadow:0 8px 18px rgba(255,79,139,.35);
+      position:relative;
+      z-index:1; /* just normal layering */
+      transition: transform .12s ease;
     }
+    #yes:active{ transform:scale(.98); }
 
+    /* Smaller No so it has more room */
     #no{
       background:#eee;
       color:#111;
+      padding:11px 18px;       /* smaller */
+      font-size:16px;          /* smaller */
+      min-width:92px;          /* smaller */
       position:absolute;
-      left:55%;
-      top:50%;
+      left:75%;
+      top:55%;
       transform:translate(-50%,-50%);
-      min-width:100px;
+      z-index:1; /* same as yes; we avoid overlap instead */
       transition:
-        left .22s cubic-bezier(.2,.9,.2,1),
-        top  .22s cubic-bezier(.2,.9,.2,1);
+        left .16s cubic-bezier(.2,.9,.2,1),
+        top  .16s cubic-bezier(.2,.9,.2,1);
     }
+    #no:active{ transform:translate(-50%,-50%) scale(.98); }
 
     .hint{
       margin-top:14px;
@@ -103,21 +114,22 @@
 
     .hidden{ display:none; }
 
-    /* Cute floating hearts (lightweight) */
+    /* hearts */
     .heart{
       position:absolute;
       bottom:-20px;
       font-size:18px;
-      opacity:.8;
+      opacity:.85;
       animation: floatUp 2.8s ease-in forwards;
       pointer-events:none;
     }
     @keyframes floatUp{
       from{ transform:translateY(0) scale(1); opacity:.85; }
-      to{ transform:translateY(-160px) scale(1.35); opacity:0; }
+      to{ transform:translateY(-170px) scale(1.35); opacity:0; }
     }
   </style>
 </head>
+
 <body>
   <div class="wrap">
     <div class="card" id="questionCard">
@@ -145,38 +157,87 @@
   </div>
 
   <script>
-    const yesBtn = document.getElementById("yes");
-    const noBtn  = document.getElementById("no");
+    const yesBtn   = document.getElementById("yes");
+    const noBtn    = document.getElementById("no");
     const playArea = document.getElementById("playArea");
 
-    // Move "No" to a random spot INSIDE the play area, smoothly
-    function moveNo(){
-      const areaRect = playArea.getBoundingClientRect();
-      const btnRect  = noBtn.getBoundingClientRect();
-
-      const padding = 10;
-      const maxX = areaRect.width - btnRect.width - padding;
-      const maxY = areaRect.height - btnRect.height - padding;
-
-      const x = padding + Math.random() * Math.max(0, maxX);
-      const y = padding + Math.random() * Math.max(0, maxY);
-
-      noBtn.style.left = `${x + btnRect.width/2}px`;
-      noBtn.style.top  = `${y + btnRect.height/2}px`;
+    // Helper: do two rectangles overlap?
+    function overlaps(a, b) {
+      return !(
+        a.right < b.left ||
+        a.left > b.right ||
+        a.bottom < b.top ||
+        a.top > b.bottom
+      );
     }
 
-    // On mobile, use touch start / pointer events (more reliable than hover)
-    // Make it dodge when your finger gets near OR when you try to tap it.
-    noBtn.addEventListener("pointerdown", (e) => { e.preventDefault(); moveNo(); });
-    noBtn.addEventListener("pointerenter", moveNo);
+    // Place "No" somewhere inside the play area, BUT not overlapping Yes
+    function moveNo() {
+      const area = playArea.getBoundingClientRect();
+      const yesR = yesBtn.getBoundingClientRect();
+      const noR  = noBtn.getBoundingClientRect();
 
-    // Also dodge if user taps anywhere near the "No" button (feels smoother on phones)
+      const pad = 10;
+
+      const minX = pad;
+      const maxX = area.width - noR.width - pad;
+      const minY = pad;
+      const maxY = area.height - noR.height - pad;
+
+      // We'll test positions up to 40 times to find a clean spot
+      for (let i = 0; i < 40; i++) {
+        const x = minX + Math.random() * Math.max(0, maxX);
+        const y = minY + Math.random() * Math.max(0, maxY);
+
+        // Candidate rect in PAGE coordinates
+        const candidate = {
+          left:   area.left + x,
+          top:    area.top + y,
+          right:  area.left + x + noR.width,
+          bottom: area.top  + y + noR.height
+        };
+
+        // Expand Yes rect slightly so No doesn’t sit too close to it
+        const yesSafe = {
+          left: yesR.left - 18,
+          top: yesR.top - 18,
+          right: yesR.right + 18,
+          bottom: yesR.bottom + 18
+        };
+
+        if (!overlaps(candidate, yesSafe)) {
+          // Set position using element center
+          noBtn.style.left = (x + noR.width / 2) + "px";
+          noBtn.style.top  = (y + noR.height / 2) + "px";
+          return;
+        }
+      }
+
+      // Fallback: top-left corner of play area
+      noBtn.style.left = (minX + noR.width / 2) + "px";
+      noBtn.style.top  = (minY + noR.height / 2) + "px";
+    }
+
+    // Stop No taps from ever triggering Yes (even if close)
+    function onNoInteract(e) {
+      e.preventDefault();
+      e.stopPropagation();
+      moveNo();
+    }
+
+    // Mobile: finger taps
+    noBtn.addEventListener("pointerdown", onNoInteract);
+
+    // Desktop: hover
+    noBtn.addEventListener("mouseenter", () => moveNo());
+
+    // Also dodge if finger gets near the No button (feels smooth)
     playArea.addEventListener("pointermove", (e) => {
-      const btn = noBtn.getBoundingClientRect();
-      const dx = e.clientX - (btn.left + btn.width/2);
-      const dy = e.clientY - (btn.top + btn.height/2);
+      const b = noBtn.getBoundingClientRect();
+      const dx = e.clientX - (b.left + b.width / 2);
+      const dy = e.clientY - (b.top + b.height / 2);
       const dist = Math.sqrt(dx*dx + dy*dy);
-      if (dist < 70) moveNo();
+      if (dist < 85) moveNo();
     });
 
     function spawnHeart(){
@@ -184,7 +245,6 @@
       h.className = "heart";
       h.textContent = "💗";
       h.style.left = (10 + Math.random()*80) + "%";
-      h.style.transform = `translateY(0) scale(${0.9 + Math.random()*0.6})`;
       document.body.appendChild(h);
       setTimeout(() => h.remove(), 3000);
     }
@@ -192,11 +252,14 @@
     yesBtn.addEventListener("click", () => {
       document.getElementById("questionCard").classList.add("hidden");
       document.getElementById("yayCard").classList.remove("hidden");
-      for (let i=0;i<10;i++) setTimeout(spawnHeart, i*120);
+      for (let i=0;i<12;i++) setTimeout(spawnHeart, i*110);
     });
 
-    // Start with No slightly moved so it doesn't overlap nicely every time
-    setTimeout(moveNo, 300);
+    // Start with No placed away from Yes
+    setTimeout(moveNo, 250);
+
+    // If phone rotates / screen changes, re-place No
+    window.addEventListener("resize", () => setTimeout(moveNo, 80));
   </script>
 </body>
 </html>
